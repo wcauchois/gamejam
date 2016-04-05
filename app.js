@@ -66,6 +66,8 @@ function clearScreen() {
 
 function drawImage(startX, startY, obj, clearColor) {
   var w = obj.width, h = obj.height;
+  startX = Math.floor(startX);
+  startY = Math.floor(startY);
   for (var y = 0; y < h; y++) {
     for (var x = 0; x < w; x++) {
       var r = obj.data[(x + y * w) * 3 + 0],
@@ -90,10 +92,10 @@ function drawImage(startX, startY, obj, clearColor) {
 
 var K_UP = 38, K_DOWN = 40, K_LEFT = 37, K_RIGHT = 39;
 var moveMap = {};
-moveMap[K_UP] = [0, -1];
-moveMap[K_DOWN] = [0, 1];
-moveMap[K_LEFT] = [-1, 0];
-moveMap[K_RIGHT] = [1, 0];
+moveMap[K_UP] =  vec2.fromValues(0, -1);
+moveMap[K_DOWN] = vec2.fromValues(0, 1);
+moveMap[K_LEFT] = vec2.fromValues(-1, 0);
+moveMap[K_RIGHT] = vec2.fromValues(1, 0);
 var keysDown = {};
 
 getJSON('ships.json').then(function(json) {
@@ -111,7 +113,12 @@ getJSON('ships.json').then(function(json) {
     }
   });
 
-  var shipPos = [0, 0];
+  var shipPos = vec2.create();
+  var shipVel = vec2.create();
+
+  var SHIP_FRICTION = 0.9;
+  var SHIP_ACCEL = 0.3;
+  var SHIP_EPS = 0.0001;
 
   setInterval(function() {
     var indices = Object.keys(keysDown);
@@ -119,10 +126,14 @@ getJSON('ships.json').then(function(json) {
     keys.forEach(function(k) {
       var dir = moveMap[k];
       if (dir) {
-        shipPos[0] += dir[0];
-        shipPos[1] += dir[1];
+        vec2.scaleAndAdd(shipVel, shipVel, dir, SHIP_ACCEL);
       }
     });
+    if (Math.abs(shipVel[0]) < SHIP_EPS && Math.abs(shipVel[1]) < SHIP_EPS) {
+      vec2.set(shipVel, 0, 0);
+    }
+    vec2.add(shipPos, shipPos, shipVel);
+    vec2.scale(shipVel, shipVel, SHIP_FRICTION);
   }, 50);
 
   function animate() {
