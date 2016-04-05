@@ -95,6 +95,33 @@ function drawImage(startX, startY, obj, clearColor) {
   }
 }
 
+var animSpeed = 0.4;
+
+var Sprite = Base.extend({
+  constructor: function(pos) {
+    this.pos = pos;
+    this.anim = this.getAnim();
+    this.animFrame = 0;
+  },
+
+  tick: function() {
+    this.animFrame += animSpeed;
+    if (this.animFrame >= this.anim.length) {
+      this.animFrame = 0;
+    }
+  },
+
+  draw: function(graphics) {
+    drawImage(this.pos[0], this.pos[1], graphics[this.anim[Math.floor(this.animFrame)]], C_WHITE);
+  }
+});
+
+var EnemySprite = Sprite.extend({
+  getAnim: function() {
+    return ['enemy_0', 'enemy_1', 'enemy_2', 'enemy_3', 'enemy_4'];
+  }
+});
+
 var K_UP = 38, K_DOWN = 40, K_LEFT = 37, K_RIGHT = 39;
 var K_SPACE = 32;
 var moveMap = {};
@@ -133,6 +160,9 @@ getJSON('ships.json').then(function(json) {
 
   var firing = false;
 
+  var enemy = new EnemySprite(vec2.fromValues(35, 15));
+  var sprites = [enemy];
+
   setInterval(function() {
     var indices = Object.keys(keysDown);
     var movementKeys = indices.filter(function(k) { return keysDown[k] && (k in moveMap); });
@@ -143,9 +173,14 @@ getJSON('ships.json').then(function(json) {
       vec2.set(shipVel, 0, 0);
     }
     vec2.add(shipPos, shipPos, shipVel);
+    // XXX this is jank AF
+    shipPos[0] = Math.min(Math.max(shipPos[0], 0), 46);
+    shipPos[1] = Math.min(Math.max(shipPos[1], 0), 55);
     vec2.scale(shipVel, shipVel, SHIP_FRICTION);
 
     firing = !!keysDown[K_SPACE];
+
+    sprites.forEach(function(s) { s.tick(); });
   }, 50);
 
   var kamehaOffset = vec2.fromValues(17, 2);
@@ -179,6 +214,8 @@ getJSON('ships.json').then(function(json) {
         }
       }
     }
+
+    sprites.forEach(function(s) { s.draw(json); });
 
     renderScreen();
     requestAnimationFrame(animate);
