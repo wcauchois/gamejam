@@ -34,6 +34,7 @@ if __name__ == '__main__':
   montage_cmd.extend(["-geometry", "{}x{}+0+0>".format(max_width, max_height)])
   montage_cmd.extend(["-tile", "{}x{}".format(sheet_width, sheet_height)])
   montage_cmd.extend(["-gravity", "NorthWest"])
+  montage_cmd.extend(["-background", "transparent"])
   montage_cmd.extend(["dist/sprites.png"])
   print "running: {}".format(' '.join(montage_cmd))
   FNULL=open(os.devnull, 'w')
