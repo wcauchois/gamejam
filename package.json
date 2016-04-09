@@ -1,0 +1,19 @@
+{
+  "name": "gamejam",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "brix.cloudhacking.net:gamejam.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "basejs": "^1.1.1",
+    "gl-matrix": "^2.3.2"
+  }
+}

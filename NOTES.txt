@@ -1,0 +1,6 @@
+if you get a zlib error trying to install Pillow: http://stackoverflow.com/a/26148624/1480571
+
+  $ brew tap homebrew/dupes
+  $ brew install zlib
+  $ brew link --force zlib
+  

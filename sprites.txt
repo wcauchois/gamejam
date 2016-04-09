@@ -1,0 +1,10 @@
+assets/enemy_0.png
+assets/enemy_1.png
+assets/enemy_2.png
+assets/enemy_3.png
+assets/enemy_4.png
+assets/kameha.png
+assets/ship.png
+assets/ship_down.png
+assets/ship_up.png
+assets/test_sprite.png
