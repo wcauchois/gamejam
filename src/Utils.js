@@ -52,5 +52,16 @@ exports.getJSON = function(url) {
   });
 };
 
+exports.doRectsIntersect = function(x1, y1, width1, height1, x2, y2, width2, height2) {
+  // http://gamedev.stackexchange.com/a/587
+  return (Math.abs(x1 - x2) * 2 < (width1 + width2)) &&
+    (Math.abs(y1 - y2) * 2 < (height1 + height2));
+};
+
+var guidNumber = 1;
+exports.guid = function(prefix) {
+  return (prefix || '') + (guidNumber++);
+};
+
 global.Utils = module.exports;
 
