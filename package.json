@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "basejs": "^1.1.1",
+    "extend-object": "^1.0.0",
     "gl-matrix": "^2.3.2"
   }
 }

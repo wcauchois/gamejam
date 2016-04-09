@@ -14,6 +14,8 @@ var SpriteManager = Base.extend({
   },
 
   draw: function(ctx, name, x, y) {
+    x = Math.floor(x);
+    y = Math.floor(y);
     var meta = this._spriteDb[name];
     ctx.drawImage(
       this._spriteImage,
