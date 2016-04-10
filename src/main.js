@@ -8,58 +8,10 @@ var vec2 = require('gl-matrix').vec2,
     PathManager = require('./PathManager'),
     ObjectManager = require('./ObjectManager'),
     GameObject = require('./GameObject'),
-    extend = require('extend-object');
+    extend = require('extend-object'),
+    Player = require('./Player');
 
 var canvas = document.getElementById('c');
-
-var SHIP_FRICTION = 0.9;
-var SHIP_ACCEL = 0.3;
-var SHIP_EPS = 0.0001;
-
-var Player = GameObject.extend({
-  constructor: function() {
-    this.base();
-    this._pos = vec2.create();
-    this._vel = vec2.create();
-
-    this._moveMap = {};
-    this._moveMap[Input.K_UP] =  vec2.fromValues(0, -1);
-    this._moveMap[Input.K_DOWN] = vec2.fromValues(0, 1);
-    this._moveMap[Input.K_LEFT] = vec2.fromValues(-1, 0);
-    this._moveMap[Input.K_RIGHT] = vec2.fromValues(1, 0);
-  },
-
-  draw: function(ctx) {
-    var spriteName;
-    if (Input.isKeyDown(Input.K_UP)) {
-      spriteName = 'ship_up';
-    } else if (Input.isKeyDown(Input.K_DOWN)) {
-      spriteName = 'ship_down';
-    } else {
-      spriteName = 'ship';
-    }
-    SpriteManager.draw(ctx, spriteName, this._pos[0], this._pos[1]);
-  },
-
-  tick: function() {
-    for (var k in this._moveMap) {
-      if (this._moveMap.hasOwnProperty(k)) {
-        if (Input.isKeyDown(k)) {
-          vec2.scaleAndAdd(this._vel, this._vel, this._moveMap[k], SHIP_ACCEL);
-        }
-      }
-    }
-    vec2.scale(this._vel, this._vel, SHIP_FRICTION);
-    if (Math.abs(this._vel[0]) < SHIP_EPS) this._vel[0] = 0;
-    if (Math.abs(this._vel[1]) < SHIP_EPS) this._vel[1] = 0;
-    vec2.add(this._pos, this._pos, this._vel);
-    /*
-    // XXX this is jank AF
-    shipPos[0] = Math.min(Math.max(shipPos[0], 0), 46);
-    shipPos[1] = Math.min(Math.max(shipPos[1], 0), 55);
-    */
-  }
-});
 
 var Level = Base.extend({
   constructor: function(spawns) {
@@ -143,17 +95,14 @@ var Orchestrator = GameObject.extend({
 function v2(x, y) { return vec2.fromValues(x, y); }
 
 var EnemyTypes = {
-  "enemy1": {"frames": ["enemy_0", "enemy_1", "enemy_2", "enemy_3", "enemy_4"]}
+  "enemy1": {"frames": ["enemy_0", "enemy_1", "enemy_2", "enemy_3", "enemy_4"],
+             "boundingBox": {x: 2, y: 2, width: 8, height: 8}}
 };
 
-var Enemy = GameObject.extend({
-  constructor: function(spawn) {
-    this.base(spawn.id);
-
-    this.spawn = spawn;
-
+var PositionedAnimated = GameObject.extend({
+  constructor: function(id) {
+    this.base(id);
     this._pos = vec2.create();
-    this._spec = EnemyTypes[spawn.type];
   },
 
   setPos: function(newPos) {
@@ -161,9 +110,28 @@ var Enemy = GameObject.extend({
   },
 
   draw: function(ctx) {
-    var currentFrame = Math.floor(GameTime.get() / 100.0) % this._spec.frames.length;
-    SpriteManager.draw(ctx, this._spec.frames[currentFrame], this._pos[0], this._pos[1]);
+    var frames = this.getFrames();
+    var currentFrame = Math.floor(GameTime.get() / 100.0) % frames.length;
+    SpriteManager.draw(ctx, frames[currentFrame], this._pos[0], this._pos[1]);
   }
+});
+
+var Enemy = PositionedAnimated.extend({
+  constructor: function(spawn) {
+    this.base(spawn.id);
+    this.spawn = spawn;
+    this._spec = EnemyTypes[spawn.type];
+  },
+
+  getFrames: function() {
+    return this._spec.frames;
+  },
+
+  getBoundingBox: function() {
+    return Utils.translateBBox(this._spec.boundingBox, this._pos);
+  },
+
+  getType: function() { return 'enemy'; }
 });
 
 Promise.all([
@@ -181,6 +149,7 @@ Promise.all([
 
   function tick() {
     objectManager.tick();
+    GameTime.inc();
   }
   setInterval(tick, 50);
   tick();

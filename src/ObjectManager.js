@@ -1,8 +1,39 @@
-var Base = require('basejs');
+var Base = require('basejs'),
+    Utils = require('./Utils'),
+    GameTime = require('./GameTime');
+
+var Collision = Base.extend({
+  constructor: function(object1, object2) {
+    this.object1 = object1;
+    this.object2 = object2;
+  },
+
+  getPair: function() {
+    return [this.object1, this.object2];
+  },
+
+  hasId: function(id) {
+    return this.object1.getId() === id ||
+      this.object2.getId() === id;
+  },
+
+  getOpposite: function(id) {
+    if (this.object1.getId() === id) {
+      return this.object2;
+    } else {
+      return this.object1;
+    }
+  },
+
+  toString: function() {
+    return this.object1.getId() + '/' + this.object2.getId();
+  }
+});
 
 var ObjectManager = Base.extend({
   constructor: function() {
     this._objects = {};
+    this._collisions = [];
   },
 
   init: function() {
@@ -11,6 +42,7 @@ var ObjectManager = Base.extend({
 
   add: function(object) {
     this._objects[object.getId()] = object;
+    object.setManager(this);
     return object;
   },
 
@@ -34,7 +66,39 @@ var ObjectManager = Base.extend({
     }.bind(this));
   },
 
+  _calculateCollisions: function() {
+    this._collisions = [];
+    var objectsWithBoundingBoxes = Object.keys(this._objects)
+      .filter(function(k) { return typeof this._objects[k].getBoundingBox() !== 'undefined'; }.bind(this))
+      .map(function(k) { return this._objects[k]; }.bind(this));
+    objectsWithBoundingBoxes.forEach(function(o1) {
+      objectsWithBoundingBoxes.forEach(function(o2) {
+        if (o1.getId() < o2.getId()) {
+          var bb1 = o1.getBoundingBox(),
+              bb2 = o2.getBoundingBox();
+          if (Utils.doRectsIntersect(
+            bb1.x,
+            bb1.y,
+            bb1.width,
+            bb1.height,
+            bb2.x,
+            bb2.y,
+            bb2.width,
+            bb2.height
+          )) {
+            this._collisions.push(new Collision(o1, o2));
+          }
+        }
+      }.bind(this));
+    }.bind(this));
+  },
+
+  getCollisions: function() {
+    return this._collisions;
+  },
+
   tick: function() {
+    this._calculateCollisions();
     this.forEach(function(o) { o.tick(); });
   },
 
@@ -47,5 +111,6 @@ var ObjectManager = Base.extend({
   }
 });
 
+ObjectManager.Collision = Collision;
 module.exports = ObjectManager;
 

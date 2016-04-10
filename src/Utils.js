@@ -58,6 +58,15 @@ exports.doRectsIntersect = function(x1, y1, width1, height1, x2, y2, width2, hei
     (Math.abs(y1 - y2) * 2 < (height1 + height2));
 };
 
+exports.fillRect = function(ctx, color, x, y, width, height) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(width), Math.floor(height));
+};
+
+exports.translateBBox = function(bbox, vec) {
+  return {x: bbox.x + vec[0], y: bbox.y + vec[1], width: bbox.width, height: bbox.height};
+};
+
 var guidNumber = 1;
 exports.guid = function(prefix) {
   return (prefix || '') + (guidNumber++);
