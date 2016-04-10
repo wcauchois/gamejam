@@ -1,9 +1,12 @@
-var Base = require('basejs');
+var Base = require('basejs'),
+    GameTime = require('./GameTime');
 
 var GameObject = Base.extend({
   constructor: function(id) {
     this._id = id || Utils.guid(this.getType());
+    this._createTime = GameTime.get();
   },
+  aliveForHowLong: function() { return GameTime.delta(this._createTime); },
   setManager: function(manager) { this._manager = manager; },
   getManager: function() { return this._manager; },
   getId: function() { return this._id; },

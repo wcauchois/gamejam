@@ -8,3 +8,7 @@ assets/ship.png
 assets/ship_down.png
 assets/ship_up.png
 assets/test_sprite.png
+assets/explode_md_1.png
+assets/explode_md_2.png
+assets/explode_md_3.png
+assets/explode_md_4.png

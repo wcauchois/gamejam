@@ -54,58 +54,10 @@
 	    PathManager = __webpack_require__(19),
 	    ObjectManager = __webpack_require__(20),
 	    GameObject = __webpack_require__(21),
-	    extend = __webpack_require__(15);
+	    extend = __webpack_require__(15),
+	    Player = __webpack_require__(22);
 
 	var canvas = document.getElementById('c');
-
-	var SHIP_FRICTION = 0.9;
-	var SHIP_ACCEL = 0.3;
-	var SHIP_EPS = 0.0001;
-
-	var Player = GameObject.extend({
-	  constructor: function() {
-	    this.base();
-	    this._pos = vec2.create();
-	    this._vel = vec2.create();
-
-	    this._moveMap = {};
-	    this._moveMap[Input.K_UP] =  vec2.fromValues(0, -1);
-	    this._moveMap[Input.K_DOWN] = vec2.fromValues(0, 1);
-	    this._moveMap[Input.K_LEFT] = vec2.fromValues(-1, 0);
-	    this._moveMap[Input.K_RIGHT] = vec2.fromValues(1, 0);
-	  },
-
-	  draw: function(ctx) {
-	    var spriteName;
-	    if (Input.isKeyDown(Input.K_UP)) {
-	      spriteName = 'ship_up';
-	    } else if (Input.isKeyDown(Input.K_DOWN)) {
-	      spriteName = 'ship_down';
-	    } else {
-	      spriteName = 'ship';
-	    }
-	    SpriteManager.draw(ctx, spriteName, this._pos[0], this._pos[1]);
-	  },
-
-	  tick: function() {
-	    for (var k in this._moveMap) {
-	      if (this._moveMap.hasOwnProperty(k)) {
-	        if (Input.isKeyDown(k)) {
-	          vec2.scaleAndAdd(this._vel, this._vel, this._moveMap[k], SHIP_ACCEL);
-	        }
-	      }
-	    }
-	    vec2.scale(this._vel, this._vel, SHIP_FRICTION);
-	    if (Math.abs(this._vel[0]) < SHIP_EPS) this._vel[0] = 0;
-	    if (Math.abs(this._vel[1]) < SHIP_EPS) this._vel[1] = 0;
-	    vec2.add(this._pos, this._pos, this._vel);
-	    /*
-	    // XXX this is jank AF
-	    shipPos[0] = Math.min(Math.max(shipPos[0], 0), 46);
-	    shipPos[1] = Math.min(Math.max(shipPos[1], 0), 55);
-	    */
-	  }
-	});
 
 	var Level = Base.extend({
 	  constructor: function(spawns) {
@@ -121,7 +73,10 @@
 	  "spawns": [
 	    {"type": "enemy1", startTime: 0.0, paths: [{name: 'path1', duration: 15000.0}]},
 	    {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path2', duration: 15000.0}]},
-	    {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path1', duration: 3000.0}]}
+	    {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path1', duration: 3000.0}]},
+	    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path3', duration: 7000.0}]},
+	    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path1', duration: 7000.0}]},
+	    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path2', duration: 7000.0}]}
 	  ]
 	});
 
@@ -189,26 +144,75 @@
 	function v2(x, y) { return vec2.fromValues(x, y); }
 
 	var EnemyTypes = {
-	  "enemy1": {"frames": ["enemy_0", "enemy_1", "enemy_2", "enemy_3", "enemy_4"]}
+	  "enemy1": {"frames": ["enemy_0", "enemy_1", "enemy_2", "enemy_3", "enemy_4"],
+	             "boundingBox": {x: 2, y: 2, width: 8, height: 8}}
 	};
 
-	var Enemy = GameObject.extend({
-	  constructor: function(spawn) {
-	    this.base(spawn.id);
-
-	    this.spawn = spawn;
-
-	    this._pos = vec2.create();
-	    this._spec = EnemyTypes[spawn.type];
+	var PositionedAnimated = GameObject.extend({
+	  constructor: function(pos, id) {
+	    this.base(id);
+	    if (pos) {
+	      this._pos = vec2.clone(pos);
+	    } else {
+	      this._pos = vec2.create();
+	    }
 	  },
 
 	  setPos: function(newPos) {
 	    this._pos = vec2.clone(newPos);
 	  },
 
+	  getAnimationSpeed: function() {
+	    return 1.0;
+	  },
+
+	  getAnimationDuration: function() {
+	    return this.getFrames().length * (100.0 / this.getAnimationSpeed());
+	  },
+
 	  draw: function(ctx) {
-	    var currentFrame = Math.floor(GameTime.get() / 100.0) % this._spec.frames.length;
-	    SpriteManager.draw(ctx, this._spec.frames[currentFrame], this._pos[0], this._pos[1]);
+	    var frames = this.getFrames();
+	    var currentFrame = Math.floor(GameTime.get() / (100.0 / this.getAnimationSpeed())) % frames.length;
+	    SpriteManager.draw(ctx, frames[currentFrame], this._pos[0], this._pos[1]);
+	  }
+	});
+
+	var MediumExplosion = PositionedAnimated.extend({
+	  getFrames: function() {
+	    return ['explode_md_1', 'explode_md_2', 'explode_md_3', 'explode_md_4'];
+	  },
+
+	  getAnimationSpeed: function() {
+	    return 1.5;
+	  },
+
+	  tick: function() {
+	    if (this.aliveForHowLong() > this.getAnimationDuration()) {
+	      this.kill();
+	    }
+	  }
+	});
+
+	var Enemy = PositionedAnimated.extend({
+	  constructor: function(spawn) {
+	    this.base(null, spawn.id);
+	    this.spawn = spawn;
+	    this._spec = EnemyTypes[spawn.type];
+	  },
+
+	  getFrames: function() {
+	    return this._spec.frames;
+	  },
+
+	  getBoundingBox: function() {
+	    return Utils.translateBBox(this._spec.boundingBox, this._pos);
+	  },
+
+	  getType: function() { return 'enemy'; },
+
+	  kill: function() {
+	    this.getManager().add(new MediumExplosion(this._pos));
+	    this.base();
 	  }
 	});
 
@@ -227,6 +231,7 @@
 
 	  function tick() {
 	    objectManager.tick();
+	    GameTime.inc();
 	  }
 	  setInterval(tick, 50);
 	  tick();
@@ -7024,6 +7029,15 @@
 	    (Math.abs(y1 - y2) * 2 < (height1 + height2));
 	};
 
+	exports.fillRect = function(ctx, color, x, y, width, height) {
+	  ctx.fillStyle = color;
+	  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(width), Math.floor(height));
+	};
+
+	exports.translateBBox = function(bbox, vec) {
+	  return {x: bbox.x + vec[0], y: bbox.y + vec[1], width: bbox.width, height: bbox.height};
+	};
+
 	var guidNumber = 1;
 	exports.guid = function(prefix) {
 	  return (prefix || '') + (guidNumber++);
@@ -7118,11 +7132,20 @@
 	var GameTime = Base.extend({
 	  init: function() {
 	    this._epoch = new Date().getTime();
+	    this._frame = 0;
 	    return Promise.resolve();
 	  },
 
 	  get: function() {
 	    return (new Date().getTime() - this._epoch);
+	  },
+
+	  inc: function() {
+	    this._frame++;
+	  },
+
+	  getFrame: function() {
+	    return this._frame;
 	  },
 
 	  delta: function(from) {
@@ -7412,11 +7435,42 @@
 /* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Base = __webpack_require__(11);
+	var Base = __webpack_require__(11),
+	    Utils = __webpack_require__(13),
+	    GameTime = __webpack_require__(16);
+
+	var Collision = Base.extend({
+	  constructor: function(object1, object2) {
+	    this.object1 = object1;
+	    this.object2 = object2;
+	  },
+
+	  getPair: function() {
+	    return [this.object1, this.object2];
+	  },
+
+	  hasId: function(id) {
+	    return this.object1.getId() === id ||
+	      this.object2.getId() === id;
+	  },
+
+	  getOpposite: function(id) {
+	    if (this.object1.getId() === id) {
+	      return this.object2;
+	    } else {
+	      return this.object1;
+	    }
+	  },
+
+	  toString: function() {
+	    return this.object1.getId() + '/' + this.object2.getId();
+	  }
+	});
 
 	var ObjectManager = Base.extend({
 	  constructor: function() {
 	    this._objects = {};
+	    this._collisions = [];
 	  },
 
 	  init: function() {
@@ -7425,6 +7479,7 @@
 
 	  add: function(object) {
 	    this._objects[object.getId()] = object;
+	    object.setManager(this);
 	    return object;
 	  },
 
@@ -7448,7 +7503,39 @@
 	    }.bind(this));
 	  },
 
+	  _calculateCollisions: function() {
+	    this._collisions = [];
+	    var objectsWithBoundingBoxes = Object.keys(this._objects)
+	      .filter(function(k) { return typeof this._objects[k].getBoundingBox() !== 'undefined'; }.bind(this))
+	      .map(function(k) { return this._objects[k]; }.bind(this));
+	    objectsWithBoundingBoxes.forEach(function(o1) {
+	      objectsWithBoundingBoxes.forEach(function(o2) {
+	        if (o1.getId() < o2.getId()) {
+	          var bb1 = o1.getBoundingBox(),
+	              bb2 = o2.getBoundingBox();
+	          if (Utils.doRectsIntersect(
+	            bb1.x,
+	            bb1.y,
+	            bb1.width,
+	            bb1.height,
+	            bb2.x,
+	            bb2.y,
+	            bb2.width,
+	            bb2.height
+	          )) {
+	            this._collisions.push(new Collision(o1, o2));
+	          }
+	        }
+	      }.bind(this));
+	    }.bind(this));
+	  },
+
+	  getCollisions: function() {
+	    return this._collisions;
+	  },
+
 	  tick: function() {
+	    this._calculateCollisions();
 	    this.forEach(function(o) { o.tick(); });
 	  },
 
@@ -7461,6 +7548,7 @@
 	  }
 	});
 
+	ObjectManager.Collision = Collision;
 	module.exports = ObjectManager;
 
 
@@ -7469,20 +7557,189 @@
 /* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Base = __webpack_require__(11);
+	var Base = __webpack_require__(11),
+	    GameTime = __webpack_require__(16);
 
 	var GameObject = Base.extend({
 	  constructor: function(id) {
 	    this._id = id || Utils.guid(this.getType());
+	    this._createTime = GameTime.get();
 	  },
+	  aliveForHowLong: function() { return GameTime.delta(this._createTime); },
+	  setManager: function(manager) { this._manager = manager; },
+	  getManager: function() { return this._manager; },
 	  getId: function() { return this._id; },
 	  tick: function() {},
 	  draw: function(ctx) {},
-	  getType: function() { return 'generic'; }
+	  getType: function() { return 'generic'; },
+	  getBoundingBox: function() { return undefined; },
+	  kill: function() {
+	    this.getManager().remove(this);
+	  },
+	  getCollisions: function() { return this.getManager().getCollisions(); }
 	});
 
 	module.exports = GameObject;
 
+
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var GameObject = __webpack_require__(21),
+	    Input = __webpack_require__(14),
+	    Color = __webpack_require__(23),
+	    vec2 = __webpack_require__(1).vec2,
+	    SpriteManager = __webpack_require__(12);
+
+	// XXX orig values: friction = 0.9, accel = 0.3
+	var SHIP_FRICTION = 0.8;
+	var SHIP_ACCEL = 0.5;
+	var SHIP_EPS = 0.0001;
+	var BOUNCE_FRICTION = 0.4;
+
+	var kamehaOffset = vec2.fromValues(17, 2);
+	var beamOffset = vec2.add(vec2.create(), kamehaOffset, vec2.fromValues(10, 3));
+	var beamHeight = 4;
+	var fireDuration = 500.0;
+	var fireCooldown = 1500.0;
+	var shipWidth = 18;
+	var shipHeight = 10;
+
+	var Beam = GameObject.extend({
+	  updateBoundingBox: function(x, y, width, height) {
+	    this._boundingBox = {x: x, y: y, width: width, height: height};
+	  },
+
+	  getBoundingBox: function() {
+	    return this._boundingBox;
+	  },
+
+	  getType: function() { return 'beam'; }
+	});
+
+	var Player = GameObject.extend({
+	  constructor: function() {
+	    this.base();
+	    this._pos = vec2.create();
+	    this._vel = vec2.create();
+	    this._firing = false;
+
+	    this._lastFire = undefined;
+	    this._fireStart = undefined;
+
+	    this._moveMap = {};
+	    this._moveMap[Input.K_UP] =  vec2.fromValues(0, -1);
+	    this._moveMap[Input.K_DOWN] = vec2.fromValues(0, 1);
+	    this._moveMap[Input.K_LEFT] = vec2.fromValues(-1, 0);
+	    this._moveMap[Input.K_RIGHT] = vec2.fromValues(1, 0);
+
+	    this._beam = null;
+	  },
+
+	  draw: function(ctx) {
+	    var spriteName;
+	    if (this._movingUp) {
+	      spriteName = 'ship_up';
+	    } else if (this._movingDown) {
+	      spriteName = 'ship_down';
+	    } else {
+	      spriteName = 'ship';
+	    }
+
+	    if (this._firing) {
+	      var kamehaPos = vec2.add(vec2.create(), this._pos, kamehaOffset);
+	      SpriteManager.draw(ctx, 'kameha', kamehaPos[0], kamehaPos[1]);
+	    }
+
+	    SpriteManager.draw(ctx, spriteName, this._pos[0], this._pos[1]);
+
+	    if (this._firing) {
+	      Utils.fillRect(
+	        ctx,
+	        Color.C_BEAM_OUTER,
+	        this._pos[0] + beamOffset[0],
+	        this._pos[1] + beamOffset[1],
+	        64 - this._pos[0] - beamOffset[0],
+	        beamHeight
+	      );
+	      Utils.fillRect(
+	        ctx,
+	        Color.C_BEAM_INNER,
+	        this._pos[0] + beamOffset[0],
+	        this._pos[1] + beamOffset[1] + 1,
+	        64 - this._pos[0] - beamOffset[0],
+	        beamHeight - 2
+	      );
+	    }
+	  },
+
+	  tick: function() {
+	    for (var k in this._moveMap) {
+	      if (this._moveMap.hasOwnProperty(k)) {
+	        if (Input.isKeyDown(k)) {
+	          vec2.scaleAndAdd(this._vel, this._vel, this._moveMap[k], SHIP_ACCEL);
+	        }
+	      }
+	    }
+	    this._movingUp = Input.isKeyDown(Input.K_UP);
+	    this._movingDown = Input.isKeyDown(Input.K_DOWN);
+	    vec2.scale(this._vel, this._vel, SHIP_FRICTION);
+	    if (Math.abs(this._vel[0]) < SHIP_EPS) this._vel[0] = 0;
+	    if (Math.abs(this._vel[1]) < SHIP_EPS) this._vel[1] = 0;
+	    vec2.add(this._pos, this._pos, this._vel);
+
+	    this._firing = Input.isKeyDown(Input.K_SPACE);
+
+	    if (this._firing && !this._beam) {
+	      this.getManager().add(this._beam = new Beam());
+	    } else if (!this._firing && this._beam) {
+	      this.getManager().remove(this._beam);
+	      this._beam = null;
+	    }
+
+	    if (this._beam) {
+	      this._beam.updateBoundingBox(
+	        this._pos[0] + beamOffset[0],
+	        this._pos[1] + beamOffset[1],
+	        80 - this._pos[0] - beamOffset[0],
+	        beamHeight
+	      );
+	      var beamId = this._beam.getId();
+	      this.getCollisions().forEach(function(c) {
+	        if (c.hasId(beamId) && c.getOpposite(beamId).getType() === 'enemy') {
+	          c.getOpposite(beamId).kill();
+	        }
+	      });
+	    }
+
+	    for (var i = 0; i < 2; i++) {
+	      var lowerBound = (i === 0) ? -4 : -4;
+	      var upperBound = (i === 0) ? 50 : 58;
+	      if (this._pos[i] < lowerBound) {
+	        this._vel[i] = Math.abs(this._vel[i]) * BOUNCE_FRICTION;
+	        this._pos[i] = -4;
+	      }
+	      if (this._pos[i] > upperBound) {
+	        this._vel[i] = -Math.abs(this._vel[i]) * BOUNCE_FRICTION;
+	        this._pos[i] = upperBound;
+	      }
+	    }
+	  }
+	});
+
+	module.exports = Player;
+
+
+
+/***/ },
+/* 23 */
+/***/ function(module, exports) {
+
+	exports.C_WHITE = 'rgb(255, 255, 255)';
+	exports.C_BEAM_OUTER = 'rgb(90, 239, 255)';
+	exports.C_BEAM_INNER = 'rgb(247, 255, 252)';
 
 
 /***/ }

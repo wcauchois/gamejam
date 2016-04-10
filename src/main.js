@@ -27,7 +27,10 @@ var level1 = Level.unpack({
   "spawns": [
     {"type": "enemy1", startTime: 0.0, paths: [{name: 'path1', duration: 15000.0}]},
     {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path2', duration: 15000.0}]},
-    {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path1', duration: 3000.0}]}
+    {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path1', duration: 3000.0}]},
+    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path3', duration: 7000.0}]},
+    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path1', duration: 7000.0}]},
+    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path2', duration: 7000.0}]}
   ]
 });
 
@@ -100,25 +103,53 @@ var EnemyTypes = {
 };
 
 var PositionedAnimated = GameObject.extend({
-  constructor: function(id) {
+  constructor: function(pos, id) {
     this.base(id);
-    this._pos = vec2.create();
+    if (pos) {
+      this._pos = vec2.clone(pos);
+    } else {
+      this._pos = vec2.create();
+    }
   },
 
   setPos: function(newPos) {
     this._pos = vec2.clone(newPos);
   },
 
+  getAnimationSpeed: function() {
+    return 1.0;
+  },
+
+  getAnimationDuration: function() {
+    return this.getFrames().length * (100.0 / this.getAnimationSpeed());
+  },
+
   draw: function(ctx) {
     var frames = this.getFrames();
-    var currentFrame = Math.floor(GameTime.get() / 100.0) % frames.length;
+    var currentFrame = Math.floor(GameTime.get() / (100.0 / this.getAnimationSpeed())) % frames.length;
     SpriteManager.draw(ctx, frames[currentFrame], this._pos[0], this._pos[1]);
+  }
+});
+
+var MediumExplosion = PositionedAnimated.extend({
+  getFrames: function() {
+    return ['explode_md_1', 'explode_md_2', 'explode_md_3', 'explode_md_4'];
+  },
+
+  getAnimationSpeed: function() {
+    return 1.5;
+  },
+
+  tick: function() {
+    if (this.aliveForHowLong() > this.getAnimationDuration()) {
+      this.kill();
+    }
   }
 });
 
 var Enemy = PositionedAnimated.extend({
   constructor: function(spawn) {
-    this.base(spawn.id);
+    this.base(null, spawn.id);
     this.spawn = spawn;
     this._spec = EnemyTypes[spawn.type];
   },
@@ -131,7 +162,12 @@ var Enemy = PositionedAnimated.extend({
     return Utils.translateBBox(this._spec.boundingBox, this._pos);
   },
 
-  getType: function() { return 'enemy'; }
+  getType: function() { return 'enemy'; },
+
+  kill: function() {
+    this.getManager().add(new MediumExplosion(this._pos));
+    this.base();
+  }
 });
 
 Promise.all([
