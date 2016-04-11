@@ -58,6 +58,26 @@ exports.doRectsIntersect = function(x1, y1, width1, height1, x2, y2, width2, hei
     (Math.abs(y1 - y2) * 2 < (height1 + height2));
 };
 
+exports.randIntBetween = function(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+/*
+exports.chooseDistribution = function(distribution) {
+  var totalProb = distribution
+    .map(function(d) { return d[0]; })
+    .reduce(function(x1, x2) { return x1 + x2; }, 0);
+  var choice = Math.random() * totalProb;
+  var cur = totalProb;
+  for (var i = distribution.length - 1; i >= 0; i--) {
+    cur -= distribution[i][0];
+    if (cur < choice) {
+      return distribution[i][1];
+    }
+  }
+};
+*/
+
 exports.fillRect = function(ctx, color, x, y, width, height) {
   ctx.fillStyle = color;
   ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(width), Math.floor(height));

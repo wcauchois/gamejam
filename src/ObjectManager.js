@@ -103,7 +103,10 @@ var ObjectManager = Base.extend({
   },
 
   draw: function(ctx) {
-    this.forEach(function(o) { o.draw(ctx); });
+    var objectsToDraw = [];
+    this.forEach(function(o) { objectsToDraw.push(o); });
+    objectsToDraw.sort(function(o1, o2) { return o1.drawOrder() - o2.drawOrder(); });
+    objectsToDraw.forEach(function(o) { o.draw(ctx); });
   },
 
   isAlive: function(o) {

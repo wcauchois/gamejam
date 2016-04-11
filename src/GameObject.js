@@ -8,6 +8,7 @@ var GameObject = Base.extend({
   },
   aliveForHowLong: function() { return GameTime.delta(this._createTime); },
   setManager: function(manager) { this._manager = manager; },
+  drawOrder: function() { return 0; },
   getManager: function() { return this._manager; },
   getId: function() { return this._id; },
   tick: function() {},

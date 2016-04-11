@@ -8,6 +8,7 @@ var vec2 = require('gl-matrix').vec2,
     PathManager = require('./PathManager'),
     ObjectManager = require('./ObjectManager'),
     GameObject = require('./GameObject'),
+    StarField = require('./StarField'),
     extend = require('extend-object'),
     Player = require('./Player');
 
@@ -182,6 +183,7 @@ Promise.all([
   objectManager.add(player);
   var orchestrator = new Orchestrator(objectManager, level1);
   objectManager.add(orchestrator);
+  objectManager.add(new StarField());
 
   function tick() {
     objectManager.tick();
