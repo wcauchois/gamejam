@@ -54,8 +54,9 @@
 	    PathManager = __webpack_require__(19),
 	    ObjectManager = __webpack_require__(20),
 	    GameObject = __webpack_require__(21),
+	    StarField = __webpack_require__(22),
 	    extend = __webpack_require__(15),
-	    Player = __webpack_require__(22);
+	    Player = __webpack_require__(23);
 
 	var canvas = document.getElementById('c');
 
@@ -228,6 +229,7 @@
 	  objectManager.add(player);
 	  var orchestrator = new Orchestrator(objectManager, level1);
 	  objectManager.add(orchestrator);
+	  objectManager.add(new StarField());
 
 	  function tick() {
 	    objectManager.tick();
@@ -7029,6 +7031,26 @@
 	    (Math.abs(y1 - y2) * 2 < (height1 + height2));
 	};
 
+	exports.randIntBetween = function(min, max) {
+	  return Math.floor(Math.random() * (max - min + 1)) + min;
+	};
+
+	/*
+	exports.chooseDistribution = function(distribution) {
+	  var totalProb = distribution
+	    .map(function(d) { return d[0]; })
+	    .reduce(function(x1, x2) { return x1 + x2; }, 0);
+	  var choice = Math.random() * totalProb;
+	  var cur = totalProb;
+	  for (var i = distribution.length - 1; i >= 0; i--) {
+	    cur -= distribution[i][0];
+	    if (cur < choice) {
+	      return distribution[i][1];
+	    }
+	  }
+	};
+	*/
+
 	exports.fillRect = function(ctx, color, x, y, width, height) {
 	  ctx.fillStyle = color;
 	  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(width), Math.floor(height));
@@ -7540,7 +7562,10 @@
 	  },
 
 	  draw: function(ctx) {
-	    this.forEach(function(o) { o.draw(ctx); });
+	    var objectsToDraw = [];
+	    this.forEach(function(o) { objectsToDraw.push(o); });
+	    objectsToDraw.sort(function(o1, o2) { return o1.drawOrder() - o2.drawOrder(); });
+	    objectsToDraw.forEach(function(o) { o.draw(ctx); });
 	  },
 
 	  isAlive: function(o) {
@@ -7567,6 +7592,7 @@
 	  },
 	  aliveForHowLong: function() { return GameTime.delta(this._createTime); },
 	  setManager: function(manager) { this._manager = manager; },
+	  drawOrder: function() { return 0; },
 	  getManager: function() { return this._manager; },
 	  getId: function() { return this._id; },
 	  tick: function() {},
@@ -7588,8 +7614,92 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var GameObject = __webpack_require__(21),
+	    Base = __webpack_require__(11),
+	    vec2 = __webpack_require__(1).vec2,
+	    GameTime = __webpack_require__(16),
+	    Utils = __webpack_require__(13);
+
+	var starColor = 'rgb(255, 255, 255)';
+
+	var NUM_STARS = 13;
+	var FIELD_SPEED = 0.02;
+
+	var Star = Base.extend({
+	  constructor: function(pos) {
+	    this._speed = 1.0;
+	    this.reset();
+	    this._pos = pos;
+	  },
+
+	  getColor: function() {
+	    return this._color;
+	  },
+
+	  _resetColor: function() {
+	    var r = Math.random();
+	    if (r < 0.05) {
+	      this._color = 'rgba(0, 0, 0, 0)';
+	    } else if (r < 0.2875) {
+	      this._color = '#9E9E9E';
+	    } else if (r < 0.525) {
+	      this._color = '#A0A0B3';
+	    } else if (r < 0.7625) {
+	      this._color = '#FFFFFD';
+	    } else {
+	      this._color = '#DDDDDD';
+	    }
+	  },
+
+	  move: function(delta) { this._pos[0] += delta * this._speed; },
+	  reset: function() {
+	    this._pos = vec2.fromValues(65, Utils.randIntBetween(0, 64));
+	    this._resetColor();
+	    this._speed = Utils.randIntBetween(10, 15);
+	  },
+	  getX: function() { return this._pos[0]; },
+	  getY: function() { return this._pos[1]; }
+	});
+
+	var StarField = GameObject.extend({
+	  drawOrder: function() { return -999; },
+
+	  constructor: function() {
+	    this.base();
+	    this._stars = [];
+	    for (var i = 0; i < NUM_STARS; i++) {
+	      this._stars.push(new Star(vec2.fromValues(
+	        Utils.randIntBetween(0, 64),
+	        Utils.randIntBetween(0, 64)
+	      )));
+	    }
+	  },
+
+	  tick: function() {
+	    this._stars.forEach(function(star) {
+	      star.move(-FIELD_SPEED);
+	      if (star.getX() < 0) {
+	        star.reset();
+	      }
+	    });
+	  },
+
+	  draw: function(ctx) {
+	    this._stars.forEach(function(star) {
+	      Utils.fillRect(ctx, star.getColor(), star.getX(), star.getY(), 1, 1);
+	    });
+	  }
+	});
+
+	module.exports = StarField;
+
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var GameObject = __webpack_require__(21),
 	    Input = __webpack_require__(14),
-	    Color = __webpack_require__(23),
+	    Color = __webpack_require__(24),
 	    vec2 = __webpack_require__(1).vec2,
 	    SpriteManager = __webpack_require__(12);
 
@@ -7734,7 +7844,7 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports) {
 
 	exports.C_WHITE = 'rgb(255, 255, 255)';
