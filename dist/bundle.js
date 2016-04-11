@@ -70,16 +70,22 @@
 	  return new Level(json.spawns);
 	};
 
-	var level1 = Level.unpack({
-	  "spawns": [
-	    {"type": "enemy1", startTime: 0.0, paths: [{name: 'path1', duration: 15000.0}]},
-	    {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path2', duration: 15000.0}]},
-	    {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path1', duration: 3000.0}]},
-	    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path3', duration: 7000.0}]},
-	    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path1', duration: 7000.0}]},
-	    {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path2', duration: 7000.0}]}
-	  ]
-	});
+	var tempdata = [
+	  {"type": "enemy1", startTime: 0.0, paths: [{name: 'path1', duration: 15000.0}]},
+	  {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path2', duration: 15000.0}]},
+	  {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path1', duration: 3000.0}]},
+	  {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path3', duration: 7000.0}]},
+	  {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path1', duration: 7000.0}]},
+	  {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path2', duration: 7000.0}]}
+	];
+	var level1data = [];
+	for (var i = 0; i < 10; i++) {
+	  tempdata.forEach(function(t) {
+	    level1data.push(extend({}, t, {startTime: t.startTime + i * 10000.0}));
+	  });
+	}
+
+	var level1 = Level.unpack({spawns: level1data});
 
 	var Orchestrator = GameObject.extend({
 	  constructor: function(manager, level) {
