@@ -4,10 +4,10 @@ var vec2 = require('gl-matrix').vec2,
     SpriteManager = require('./SpriteManager'),
     Input = require('./Input'),
     GameTime = require('./GameTime'),
-    Path = require('./Path'),
     PathManager = require('./PathManager'),
     ObjectManager = require('./ObjectManager'),
     GameObject = require('./GameObject'),
+    SoundManager = require('./SoundManager'),
     StarField = require('./StarField'),
     extend = require('extend-object'),
     Player = require('./Player');
@@ -173,6 +173,7 @@ var Enemy = PositionedAnimated.extend({
 
   kill: function() {
     this.getManager().add(new MediumExplosion(this._pos));
+    SoundManager.play('explode1');
     this.base();
   }
 });
@@ -181,7 +182,8 @@ Promise.all([
   SpriteManager.init(),
   Input.init(),
   GameTime.init(),
-  PathManager.init()
+  PathManager.init(),
+  SoundManager.init()
 ]).then(function() {
 
   var player = new Player();

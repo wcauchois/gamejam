@@ -12,10 +12,13 @@ exports.loadImage = function(url) {
   });
 };
 
-var runXHR = function(url, method) {
+var runXHR = function(url, method, responseType) {
   return new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest();
     xhr.open(method, url);
+    if (typeof responseType !== 'undefined') {
+      xhr.responseType = responseType;
+    }
     xhr.onload = function() {
       if (this.status >= 200 && this.status < 300) {
         resolve(xhr);
@@ -27,6 +30,12 @@ var runXHR = function(url, method) {
       reject(new Error("Server responded with status " + xhr.status + " " + xhr.statusText));
     };
     xhr.send();
+  });
+};
+
+exports.getBinary = function(url) {
+  return runXHR(url, 'GET', 'arraybuffer').then(function(xhr) {
+    return xhr.response;
   });
 };
 
@@ -52,6 +61,11 @@ exports.getJSON = function(url) {
   });
 };
 
+exports.pathBasename = function(path) {
+  var parts = path.split('/');
+  return parts[parts.length - 1].split('.')[0];
+};
+
 exports.doRectsIntersect = function(x1, y1, width1, height1, x2, y2, width2, height2) {
   // http://gamedev.stackexchange.com/a/587
   return (Math.abs(x1 - x2) * 2 < (width1 + width2)) &&
@@ -61,22 +75,6 @@ exports.doRectsIntersect = function(x1, y1, width1, height1, x2, y2, width2, hei
 exports.randIntBetween = function(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
-
-/*
-exports.chooseDistribution = function(distribution) {
-  var totalProb = distribution
-    .map(function(d) { return d[0]; })
-    .reduce(function(x1, x2) { return x1 + x2; }, 0);
-  var choice = Math.random() * totalProb;
-  var cur = totalProb;
-  for (var i = distribution.length - 1; i >= 0; i--) {
-    cur -= distribution[i][0];
-    if (cur < choice) {
-      return distribution[i][1];
-    }
-  }
-};
-*/
 
 exports.fillRect = function(ctx, color, x, y, width, height) {
   ctx.fillStyle = color;

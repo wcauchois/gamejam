@@ -1,6 +1,7 @@
 var GameObject = require('./GameObject'),
     Input = require('./Input'),
     Color = require('./Color'),
+    SoundManager = require('./SoundManager'),
     vec2 = require('gl-matrix').vec2,
     SpriteManager = require('./SpriteManager');
 
@@ -105,6 +106,7 @@ var Player = GameObject.extend({
 
     if (this._firing && !this._beam) {
       this.getManager().add(this._beam = new Beam());
+      SoundManager.play('laser1');
     } else if (!this._firing && this._beam) {
       this.getManager().remove(this._beam);
       this._beam = null;
