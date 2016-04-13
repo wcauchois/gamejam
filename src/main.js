@@ -1,4 +1,3 @@
-
 var vec2 = require('gl-matrix').vec2,
     Base = require('basejs'),
     SpriteManager = require('./SpriteManager'),

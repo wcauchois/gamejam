@@ -6,7 +6,12 @@ var PathManager = Base.extend({
   init: function() {
     return Utils.getXML('paths.svg').then(function(svg) {
       this._svgDoc = svg;
+      this._preprocessSvg();
     }.bind(this));
+  },
+
+  _preprocessSvg: function() {
+    var allPaths = Array.prototype.slice.call(this._svgDoc.getElementsByTagName('path'));
   },
 
   getPath: function(pathName) {
