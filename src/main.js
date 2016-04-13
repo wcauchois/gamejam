@@ -8,37 +8,11 @@ var vec2 = require('gl-matrix').vec2,
     GameObject = require('./GameObject'),
     SoundManager = require('./SoundManager'),
     StarField = require('./StarField'),
+    Levels = require('./Levels'),
     extend = require('extend-object'),
     Player = require('./Player');
 
 var canvas = document.getElementById('c');
-
-var Level = Base.extend({
-  constructor: function(spawns) {
-    this.spawns = spawns;
-  }
-});
-
-Level.unpack = function(json) {
-  return new Level(json.spawns);
-};
-
-var tempdata = [
-  {"type": "enemy1", startTime: 0.0, paths: [{name: 'path1', duration: 15000.0}]},
-  {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path2', duration: 15000.0}]},
-  {"type": "enemy1", startTime: 5000.0, paths: [{name: 'path1', duration: 3000.0}]},
-  {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path3', duration: 7000.0}]},
-  {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path1', duration: 7000.0}]},
-  {"type": "enemy1", startTime: 10000.0, paths: [{name: 'path2', duration: 7000.0}]}
-];
-var level1data = [];
-for (var i = 0; i < 10; i++) {
-  tempdata.forEach(function(t) {
-    level1data.push(extend({}, t, {startTime: t.startTime + i * 10000.0}));
-  });
-}
-
-var level1 = Level.unpack({spawns: level1data});
 
 var Orchestrator = GameObject.extend({
   constructor: function(manager, level) {
@@ -105,7 +79,9 @@ function v2(x, y) { return vec2.fromValues(x, y); }
 
 var EnemyTypes = {
   "enemy1": {"frames": ["enemy_0", "enemy_1", "enemy_2", "enemy_3", "enemy_4"],
-             "boundingBox": {x: 2, y: 2, width: 8, height: 8}}
+             "boundingBox": {x: 2, y: 2, width: 8, height: 8}},
+  "smallship": {"frames": ["smallship"],
+                "boundingBox": {x: 2, y: 1, width: 9, height: 4}}
 };
 
 var PositionedAnimated = GameObject.extend({
@@ -188,7 +164,7 @@ Promise.all([
   var player = new Player();
   var objectManager = new ObjectManager();
   objectManager.add(player);
-  var orchestrator = new Orchestrator(objectManager, level1);
+  var orchestrator = new Orchestrator(objectManager, Levels.level1);
   objectManager.add(orchestrator);
   objectManager.add(new StarField());
 

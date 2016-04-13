@@ -116,7 +116,7 @@ var Player = GameObject.extend({
       this._beam.updateBoundingBox(
         this._pos[0] + beamOffset[0],
         this._pos[1] + beamOffset[1],
-        80 - this._pos[0] - beamOffset[0],
+        100 - this._pos[0] - beamOffset[0],
         beamHeight
       );
       var beamId = this._beam.getId();
